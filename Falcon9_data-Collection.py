@@ -208,7 +208,41 @@ for table_number, table in enumerate(soup.find_all('table', "wikitable plainrowh
 df= pd.DataFrame({ key:pd.Series(value) for key, value in launch_dict.items() })
 print(df)
 
+#replace zero values in Payload
+
+# Function to clean and convert payload mass values
+def clean_payload_mass(value):
+    try:
+        # Ensure the value is a string before applying string methods
+        if isinstance(value, str):
+            # Remove "kg", strip whitespace, remove commas, and convert to float
+            value = value.replace('kg', '').strip().replace(',', '')
+            # Remove "~" and convert to float
+            value = value.replace('~', '')
+            # Handle "C" and "Unknown" cases
+            if value in ["C", "Unknown"]:
+                return float('nan')
+        return float(value)
+    except ValueError:
+        # Return NaN for invalid entries
+        return float('nan')
+
+# Apply the cleaning function to the 'Payload mass' column
+df['Payload mass'] = df['Payload mass'].apply(clean_payload_mass)
+
+# Calculate the mean of the 'Payload mass' column, excluding NaN and zero values
+mean_payload_mass = df[df['Payload mass'] != 0]['Payload mass'].mean()
+
+# Round the mean value
+mean_payload_mass = round(mean_payload_mass)
+
+# Replace zero values and NaN values in the 'Payload mass' column with the rounded mean
+df['Payload mass'] = df['Payload mass'].replace(0, mean_payload_mass)
+df['Payload mass'] = df['Payload mass'].fillna(mean_payload_mass)
+
+# Convert the 'Payload mass' column to integers
+df['Payload mass'] = df['Payload mass'].astype(int)
+
+# Print the updated DataFrame to verify
+print(df)
 df.to_csv('spacex_web_scraped.csv', index=False)
-
-
-
